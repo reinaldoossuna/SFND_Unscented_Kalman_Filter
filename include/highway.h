@@ -110,7 +110,7 @@ public:
 
 		if(visualize_pcd)
 		{
-			pcl::PointCloud<pcl::PointXYZ>::Ptr trafficCloud = tools.loadPcd("../src/sensors/data/pcd/highway_"+std::to_string(timestamp)+".pcd");
+			pcl::PointCloud<pcl::PointXYZ>::Ptr trafficCloud = tools.loadPcd("../data/pcd/highway_"+std::to_string(timestamp)+".pcd");
 			renderPointCloud(viewer, trafficCloud, "trafficCloud", Color((float)184/256,(float)223/256,(float)252/256));
 		}
 		
