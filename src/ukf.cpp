@@ -54,6 +54,12 @@ UKF::UKF() {
    * TODO: Complete the initialization. See ukf.h for other member properties.
    * Hint: one or more values initialized above might be wildly off...
    */
+
+  n_x_ = 5;
+
+  n_aug_ = 7;
+
+  lambda_ = 3 - n_aug_;
 }
 
 UKF::~UKF() {}
@@ -89,4 +95,32 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    * covariance, P_.
    * You can also calculate the radar NIS, if desired.
    */
+}
+
+MatrixXd UKF::generate_sigma_points() {
+  VectorXd x_aug = VectorXd(n_aug_);
+  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+  MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+
+  // create augmented mean state, last two values are set to 0
+  x_aug.head(x_.size()) = x_;
+  x_aug(n_aug_ - 2) = 0;
+  x_aug(n_aug_ - 1) = 0;
+
+  // Create augmented covariance matrix
+  P_aug.fill(0.0);
+  P_aug.topLeftCorner(n_x_, n_x_) = P_;
+  P_aug(n_aug_ - 2, n_aug_ - 2) = std_a_ * std_a_;
+  P_aug(n_aug_ - 1, n_aug_ - 1) = std_yawdd_ * std_yawdd_;
+
+  //calculate square root of P
+  MatrixXd L = P_aug.llt().matrixL();
+
+  Xsig_aug.col(0) = x_aug;
+  for (int i = 0; i < n_aug_; i++) {
+    Xsig_aug.col(i + 1)          = x_aug + sqrt(lambda_ + n_aug_) * L.col(i);
+    Xsig_aug.col(i + 1 + n_aug_) = x_aug - sqrt(lambda_ + n_aug_) * L.col(i);
+  }
+
+  return Xsig_aug;
 }
