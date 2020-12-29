@@ -97,6 +97,14 @@ class UKF {
     double lambda_;
 
     Eigen::MatrixXd generate_sigma_points();
+    void predict_sigma_points(Eigen::MatrixXd&, double);
+
+    void normalize_angle(double&);
+    Eigen::VectorXd weigthed_mean(Eigen::MatrixXd&);
+    Eigen::MatrixXd weigthed_covariance(Eigen::MatrixXd&, Eigen::VectorXd&, int);
+    void predict_mean_covariance();
+
+    void predict_measurment_radar(&z_pred, &s);
 };
 
 #endif  // UKF_H

@@ -55,11 +55,26 @@ UKF::UKF() {
    * Hint: one or more values initialized above might be wildly off...
    */
 
+  // set state dimension
   n_x_ = 5;
 
+  // set augmented dimension
   n_aug_ = 7;
 
+  // set spreading parameter
   lambda_ = 3 - n_aug_;
+
+  // initialize sigma points matrix
+  Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+
+  // set vector for weights
+  weights_ = VectorXd(2 * n_aug_ + 1);
+  double weights0 = lambda_ / (lambda_ + n_aug_);
+  double weigth = 0.5 / (lambda_ + n_aug_);
+  weights_(0) = weights0;
+  for (int i = 1; i < 2 * n_aug_ + 1; ++i) {
+    weights_(i) = weigth;
+  }
 }
 
 UKF::~UKF() {}
@@ -123,4 +138,80 @@ MatrixXd UKF::generate_sigma_points() {
   }
 
   return Xsig_aug;
+}
+
+void UKF::predict_sigma_points(MatrixXd& Xsig_aug, double dt) {
+  for (int i = 0; i < Xsig_aug.cols(); i++) {
+    auto px       = Xsig_aug(0, i);
+    auto py       = Xsig_aug(1, i);
+    auto v        = Xsig_aug(2, i);
+    auto yaw      = Xsig_aug(3, i);
+    auto yawd     = Xsig_aug(4, i);
+    auto nu_a     = Xsig_aug(5, i);
+    auto nu_yawwd = Xsig_aug(6, i);
+
+    // predicted states
+    double px_p, py_p;
+
+
+    // avoid division by 0
+    if (fabs(yawd) > 0.001) {
+      px_p = px + v/yawd * (sin(yaw + yawd * dt) - sin(yaw));
+      py_p = py + v/yawd * (cos(yaw) - cos(yaw + yawd * dt));
+    } else {
+      px_p = px + v * dt * cos(yaw);
+      py_p = py + v * dt * sin(yaw);
+    }
+
+    double v_p = v;
+    double yaw_p = yaw + yawd * dt;
+    double yawd_p = yawd;
+
+    // add noise
+    px_p   += 0.5 * dt * dt * nu_a * cos(yaw);
+    py_p   += 0.5 * dt * dt * nu_a * sin(yaw);
+    v_p    += dt * nu_a;
+    yaw_p  +=  0.5 * dt * dt * nu_yawwd;
+    yawd_p += dt * nu_yawwd;
+
+    Xsig_pred_.col(i).fill(0);
+    Xsig_pred_(0, i) = px_p;
+    Xsig_pred_(1, i) = py_p;
+    Xsig_pred_(2, i) = v_p;
+    Xsig_pred_(3, i) = yaw_p;
+    Xsig_pred_(4, i) = yawd_p;
+  }
+}
+
+void UKF::normalize_angle(double& a){
+    while(a >  M_PI) a -= 2. * M_PI;
+    while(a < -M_PI) a += 2. * M_PI;
+}
+
+VectorXd UKF::weigthed_mean(MatrixXd& X) {
+  VectorXd y_out = VectorXd(X.rows());
+  y_out.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {
+    y_out += weights_(i) * X.col(i);
+  }
+  return y_out;
+}
+
+MatrixXd UKF::weigthed_covariance(MatrixXd& X, VectorXd& mean_x, int index_normalize) {
+  MatrixXd Y = MatrixXd(X.rows(),X.rows());
+  Y.fill(0.0);
+  for (int i = 0; i < X.cols(); i++) {
+    VectorXd diff = X.col(i) - mean_x;
+
+    //  yaw need to be -PI < yaw < PI;
+    normalize_angle(diff(index_normalize));
+
+    Y += weights_(i) * diff * diff.transpose();
+  }
+  return Y;
+}
+
+void UKF::predict_mean_covariance() {
+  x_ = weigthed_mean(Xsig_pred_);
+  P_ = weigthed_covariance(Xsig_pred_, x_, 3);
 }
