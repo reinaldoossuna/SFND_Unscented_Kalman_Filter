@@ -9,7 +9,7 @@ using Eigen::VectorXd;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -50,11 +50,6 @@ UKF::UKF() {
    * End DO NOT MODIFY section for measurement noise values 
    */
   
-  /**
-   * TODO: Complete the initialization. See ukf.h for other member properties.
-   * Hint: one or more values initialized above might be wildly off...
-   */
-
   // set state dimension
   n_x_ = 5;
 
@@ -101,8 +96,8 @@ UKF::~UKF() {}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   /**
-   * TODO: Complete this function! Make sure you switch between lidar and radar
-   * measurements.
+   * initialize values in the first run
+   * switch between lidar and radar measurements.
    */
   if (!is_initialized_) {
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
@@ -272,7 +267,7 @@ void UKF::predict_mean_covariance() {
 
 void UKF::Prediction(double delta_t) {
   /**
-   * TODO: Complete this function! Estimate the object's location.
+   * Estimate the object's location.
    * Modify the state vector, x_. Predict sigma points, the state,
    * and the state covariance matrix.
    */
@@ -322,10 +317,10 @@ void UKF::predict_measurement_radar(VectorXd* z_pred_out, MatrixXd* S_out) {
 
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
   /**
-   * TODO: Complete this function! Use radar data to update the belief
+   * Use radar data to update the belief
    * about the object's position. Modify the state vector, x_, and
    * covariance, P_.
-   * You can also calculate the radar NIS, if desired.
+   * TODO: calculate the radar NIS, if desired.
    */
   MatrixXd Zsig = sigma_2_radar();
 
@@ -395,10 +390,10 @@ void UKF::predict_measurement_lidar(VectorXd* z_pred_out, MatrixXd* S_out) {
 
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
-   * TODO: Complete this function! Use lidar data to update the belief
+   * Use lidar data to update the belief
    * about the object's position. Modify the state vector, x_, and
    * covariance, P_.
-   * You can also calculate the lidar NIS, if desired.
+   * TODO: You can also calculate the lidar NIS, if desired.
    */
   MatrixXd Zsig = sigma_2_lidar();
 
