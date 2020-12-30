@@ -93,6 +93,12 @@ class UKF {
     // Augmented state dimension
     int n_aug_;
 
+    // Measurment dimension of radar
+    int n_z_radar;
+
+    // Measurment noise covariace matrix
+    Eigen::MatrixXd R_radar_;
+
     // Sigma point spreading parameter
     double lambda_;
 
@@ -104,7 +110,8 @@ class UKF {
     Eigen::MatrixXd weigthed_covariance(Eigen::MatrixXd&, Eigen::VectorXd&, int);
     void predict_mean_covariance();
 
-    void predict_measurment_radar(&z_pred, &s);
+    Eigen::MatrixXd sigma_2_radar();
+    void predict_measurement_radar(Eigen::VectorXd*, Eigen::MatrixXd*);
 };
 
 #endif  // UKF_H

@@ -124,3 +124,27 @@ TEST_F(ukf_test, predict_mean_cov) {
     TEST_VECTOR(x_exp, ukf->x_);
     TEST_MATRIX(P_exp, ukf->P_);
 }
+TEST_F(ukf_test, predict_measurement_radar) {
+    double delta_t = 0.1;
+    Eigen::MatrixXd Xsig_arg = ukf->generate_sigma_points();
+    ukf->predict_sigma_points(Xsig_arg, delta_t);
+    ukf->predict_mean_covariance();
+    Eigen::VectorXd z_pred;
+    Eigen::MatrixXd S;
+    ukf->predict_measurement_radar(&z_pred, &S);
+
+    Eigen::VectorXd z_exp = Eigen::VectorXd(3);
+    z_exp <<
+        6.11934,
+        0.245833,
+        2.10274;
+
+    Eigen::MatrixXd S_exp = Eigen::MatrixXd(3, 3);
+    S_exp <<
+        0.0946306, -0.000145108,   0.00408754,
+        -0.000145108,   0.00121798, -0.000781354,
+        0.00408754, -0.000781354,    0.0980469;
+
+    TEST_VECTOR(z_exp, z_pred);
+    TEST_MATRIX(S_exp, S);
+}

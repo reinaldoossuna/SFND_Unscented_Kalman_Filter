@@ -75,6 +75,17 @@ UKF::UKF() {
   for (int i = 1; i < 2 * n_aug_ + 1; ++i) {
     weights_(i) = weigth;
   }
+
+  // measurement dimension of radar
+  // r, phi, r_dot
+  n_z_radar = 3;
+
+  // set measerement noise covariance matrix
+  R_radar_= MatrixXd(n_z_radar, n_z_radar);
+  R_radar_ <<
+    std_radr_ * std_radr_, 0, 0,
+    0, std_radphi_ * std_radphi_,0,
+    0, 0, std_radrd_ * std_radrd_;
 }
 
 UKF::~UKF() {}
@@ -214,4 +225,43 @@ MatrixXd UKF::weigthed_covariance(MatrixXd& X, VectorXd& mean_x, int index_norma
 void UKF::predict_mean_covariance() {
   x_ = weigthed_mean(Xsig_pred_);
   P_ = weigthed_covariance(Xsig_pred_, x_, 3);
+}
+
+MatrixXd UKF::sigma_2_radar() {
+  // r = sqrt(x^2 + y^2)
+  // phi = atan(y / x)
+  // c = cos(yaw) s = sin(yaw)
+  // r_dot = (x * c * v + y * s * v)/sqrt(x^2 + y^2)
+
+  MatrixXd Zsig = MatrixXd(n_z_radar, 2 * n_aug_ + 1);
+  for (int i = 0; i < Xsig_pred_.cols(); ++i) {
+    double p_x = Xsig_pred_(0, i);
+    double p_y = Xsig_pred_(1, i);
+    double v   = Xsig_pred_(2, i);
+    double yaw = Xsig_pred_(3, i);
+
+    // calculate measurement
+    Zsig(0, i) = sqrt(p_x * p_x + p_y * p_y);
+    Zsig(1, i) = atan2(p_y, p_x);
+    Zsig(2, i) = (p_x * cos(yaw) * v + p_y * sin(yaw) * v) / Zsig(0, i);
+  }
+
+  return Zsig;
+}
+
+void UKF::predict_measurement_radar(VectorXd* z_pred_out, MatrixXd* S_out) {
+  MatrixXd Zsig = sigma_2_radar();
+
+  // mean predicted measurement
+  VectorXd z_pred = weigthed_mean(Zsig);
+
+  // covariance matrix S_
+  MatrixXd S = weigthed_covariance(Zsig, z_pred, 1);
+
+  // add measurment noise
+  S += R_radar_;
+
+  // return
+  *S_out = S;
+  *z_pred_out = z_pred;
 }
