@@ -119,6 +119,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
     } else {
       // set lidar initialization
+      return;
     }
     time_us_ = meas_package.timestamp_;
     is_initialized_ = true;
