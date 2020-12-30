@@ -124,9 +124,17 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       P_(3,3) = std_radphi_ * std_radphi_;
       P_(4,4) = std_radphi_ * std_radphi_;
 
-    } else {
-      // set lidar initialization
-      return;
+
+    } else if (meas_package.sensor_type_ == MeasurementPackage::LASER){
+      x_ <<
+        meas_package.raw_measurements_[0], //px
+        meas_package.raw_measurements_[1],    // py
+        0, // lidar dont detect velocity
+        0,
+        0;
+
+      P_(0,0) = std_laspx_ * std_laspx_;
+      P_(1,1) = std_laspy_ * std_laspy_;
     }
 
     time_us_ = meas_package.timestamp_;
