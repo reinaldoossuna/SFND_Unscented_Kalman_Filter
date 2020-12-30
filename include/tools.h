@@ -2,7 +2,7 @@
 #define TOOLS_H_
 #include <vector>
 #include "Eigen/Dense"
-#include "render/render.h"
+#include "render.h"
 #include <pcl/io/pcd_io.h>
 
 using Eigen::MatrixXd;

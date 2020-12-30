@@ -1,8 +1,8 @@
 /* \author Aaron Brown */
 // Handle logic for creating traffic on highway and animating it
 
-#include "render/render.h"
-#include "sensors/lidar.h"
+#include "render.h"
+#include "lidar.h"
 #include "tools.h"
 
 class Highway
