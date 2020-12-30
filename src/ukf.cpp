@@ -256,11 +256,17 @@ MatrixXd UKF::weigthed_covariance(MatrixXd& X, VectorXd& mean_x, int index_norma
     VectorXd diff = X.col(i) - mean_x;
 
     //  yaw need to be -PI < yaw < PI;
-    normalize_angle(diff(index_normalize));
+    if (index_normalize != -1) {
+      normalize_angle(diff(index_normalize));
+    }
 
     Y += weights_(i) * diff * diff.transpose();
   }
   return Y;
+}
+
+MatrixXd UKF::weigthed_covariance(MatrixXd& X, VectorXd& mean_x) {
+  return weigthed_covariance(X, mean_x, -1);
 }
 
 void UKF::predict_mean_covariance() {
