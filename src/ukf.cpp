@@ -9,7 +9,7 @@ using Eigen::VectorXd;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = false;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -95,7 +95,48 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * TODO: Complete this function! Make sure you switch between lidar and radar
    * measurements.
    */
+  if (!is_initialized_) {
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      double rho = meas_package.raw_measurements_[0];
+      double phi = meas_package.raw_measurements_[1];
+      double rho_dot = meas_package.raw_measurements_[2];
+
+      double px = rho * cos(phi);
+      double py = rho * sin(phi);
+
+      double vx = rho_dot * cos(phi);
+      double vy = rho_dot * sin(phi);
+      double v = sqrt(vx * vx + vy * vy);
+
+      x_ <<
+        px,
+        py,
+        v,
+        0,
+        0;
+
+      P_ = MatrixXd::Identity(5, 5);
+
+    } else {
+      // set lidar initialization
+    }
+    time_us_ = meas_package.timestamp_;
+    is_initialized_ = true;
+    return;
+  }
+  auto dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
+  time_us_ = meas_package.timestamp_;
+
+  Prediction(dt);
+
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR
+      && use_radar_) {
+    UpdateRadar(meas_package);
+  } else {
+    // set updatelidar
+  }
 }
+
 
 void UKF::Prediction(double delta_t) {
   /**
@@ -111,15 +152,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
    * about the object's position. Modify the state vector, x_, and 
    * covariance, P_.
    * You can also calculate the lidar NIS, if desired.
-   */
-}
-
-void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Use radar data to update the belief 
-   * about the object's position. Modify the state vector, x_, and 
-   * covariance, P_.
-   * You can also calculate the radar NIS, if desired.
    */
 }
 
@@ -264,4 +296,46 @@ void UKF::predict_measurement_radar(VectorXd* z_pred_out, MatrixXd* S_out) {
   // return
   *S_out = S;
   *z_pred_out = z_pred;
+}
+
+void UKF::UpdateRadar(MeasurementPackage meas_package) {
+  /**
+   * TODO: Complete this function! Use radar data to update the belief
+   * about the object's position. Modify the state vector, x_, and
+   * covariance, P_.
+   * You can also calculate the radar NIS, if desired.
+   */
+  MatrixXd Zsig = sigma_2_radar();
+
+  // cross correlation matrix
+  MatrixXd Tc = MatrixXd(n_x_, n_z_radar);
+  Tc.fill(0.0);
+
+  VectorXd z_pred;
+  MatrixXd S;
+  predict_measurement_radar(&z_pred, &S);
+  // calculate cross correlation matrix
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) {
+    // residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+    normalize_angle(z_diff(1));
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    normalize_angle(x_diff(3));
+
+    Tc += weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  // calculate Kalman gain
+  MatrixXd K = Tc * S.inverse();
+
+  // get data from sensor
+  VectorXd z = meas_package.raw_measurements_;
+  // update state mean and covariance
+  VectorXd z_diff = z - z_pred;
+  normalize_angle(z_diff(1));
+
+  x_ += K * z_diff;
+  P_ -= K * S * K.transpose();
 }

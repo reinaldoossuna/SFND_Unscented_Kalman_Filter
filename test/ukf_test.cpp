@@ -148,3 +148,42 @@ TEST_F(ukf_test, predict_measurement_radar) {
     TEST_VECTOR(z_exp, z_pred);
     TEST_MATRIX(S_exp, S);
 }
+
+TEST_F(ukf_test, update_radar) {
+    double delta_t = 0.1;
+    Eigen::MatrixXd Xsig_arg = ukf->generate_sigma_points();
+    ukf->predict_sigma_points(Xsig_arg, delta_t);
+    ukf->predict_mean_covariance();
+    Eigen::VectorXd z_pred;
+    Eigen::MatrixXd S;
+    ukf->predict_measurement_radar(&z_pred, &S);
+
+    MeasurementPackage mp;
+    mp.sensor_type_ = MeasurementPackage::SensorType::RADAR;
+    mp.raw_measurements_ = Eigen::VectorXd(3);
+    mp.raw_measurements_ <<
+                            5.9214,   // rho in m
+                            0.2187,   // phi in rad
+                            2.0062;   // rho_dot in m/s
+
+    ukf->UpdateRadar(mp);
+
+    Eigen::VectorXd x_exp = Eigen::VectorXd(5);
+    x_exp <<
+        5.93337,
+        1.44926,
+        2.18927,
+        0.505393,
+        0.328322;
+
+    Eigen::MatrixXd P_exp = Eigen::MatrixXd(5, 5);
+    P_exp <<
+        0.00473199, -0.00147372,  0.00304273, -0.00245549, -0.00213064,
+        -0.00147372,  0.00817367,  0.00146719,  0.00719161,  0.00582479,
+        0.00304273,  0.00146719,  0.00538703, 0.000901972, 0.000946797,
+        -0.00245549,  0.00719161, 0.000901972,  0.00929299,  0.00905869,
+        -0.00213064,  0.00582479, 0.000946797,  0.00905869,   0.0108689;
+
+    TEST_VECTOR(x_exp, ukf->x_);
+    TEST_MATRIX(P_exp, ukf->P_);
+}
