@@ -187,3 +187,24 @@ TEST_F(ukf_test, update_radar) {
     TEST_VECTOR(x_exp, ukf->x_);
     TEST_MATRIX(P_exp, ukf->P_);
 }
+TEST_F(ukf_test, predict_measurement_lidar) {
+    double delta_t = 0.1;
+    Eigen::MatrixXd Xsig_arg = ukf->generate_sigma_points();
+    ukf->predict_sigma_points(Xsig_arg, delta_t);
+    ukf->predict_mean_covariance();
+    Eigen::VectorXd z_pred;
+    Eigen::MatrixXd S;
+    ukf->predict_measurement_lidar(&z_pred, &S);
+
+    Eigen::VectorXd z_exp = Eigen::VectorXd(2);
+    z_exp <<
+        5.93445,
+        1.48885;
+    Eigen::MatrixXd S_exp = Eigen::MatrixXd(2, 2);
+    S_exp <<
+        0.0279808, -0.00249899,
+        -0.00249899,   0.0335551;
+
+    TEST_VECTOR(z_exp, z_pred);
+    TEST_MATRIX(S_exp, S);
+}

@@ -95,9 +95,11 @@ class UKF {
 
     // Measurment dimension of radar
     int n_z_radar;
+    int n_z_lidar;
 
     // Measurment noise covariace matrix
     Eigen::MatrixXd R_radar_;
+    Eigen::MatrixXd R_lidar_;
 
     // Sigma point spreading parameter
     double lambda_;
@@ -108,10 +110,14 @@ class UKF {
     void normalize_angle(double&);
     Eigen::VectorXd weigthed_mean(Eigen::MatrixXd&);
     Eigen::MatrixXd weigthed_covariance(Eigen::MatrixXd&, Eigen::VectorXd&, int);
+    Eigen::MatrixXd weigthed_covariance(Eigen::MatrixXd&, Eigen::VectorXd&);
     void predict_mean_covariance();
 
     Eigen::MatrixXd sigma_2_radar();
     void predict_measurement_radar(Eigen::VectorXd*, Eigen::MatrixXd*);
+
+    Eigen::MatrixXd sigma_2_lidar();
+    void predict_measurement_lidar(Eigen::VectorXd*, Eigen::MatrixXd*);
 };
 
 #endif  // UKF_H
