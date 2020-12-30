@@ -21,10 +21,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = .3;
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = .3;
+  std_yawdd_ = 2;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -86,6 +86,9 @@ UKF::UKF() {
     std_radr_ * std_radr_, 0, 0,
     0, std_radphi_ * std_radphi_,0,
     0, 0, std_radrd_ * std_radrd_;
+
+
+  P_ = MatrixXd::Identity(5, 5);
 }
 
 UKF::~UKF() {}
@@ -115,12 +118,17 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
         0,
         0;
 
-      P_ = MatrixXd::Identity(5, 5);
+      P_(0,0) = std_radr_ * std_radr_;
+      P_(1,1) = std_radr_ * std_radr_;
+      P_(2,2) = std_radrd_ * std_radrd_;
+      P_(3,3) = std_radphi_ * std_radphi_;
+      P_(4,4) = std_radphi_ * std_radphi_;
 
     } else {
       // set lidar initialization
       return;
     }
+
     time_us_ = meas_package.timestamp_;
     is_initialized_ = true;
     return;
