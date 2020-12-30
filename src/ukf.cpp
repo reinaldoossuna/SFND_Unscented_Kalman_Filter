@@ -160,15 +160,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 }
 
 
-void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Use lidar data to update the belief 
-   * about the object's position. Modify the state vector, x_, and 
-   * covariance, P_.
-   * You can also calculate the lidar NIS, if desired.
-   */
-}
-
 MatrixXd UKF::generate_sigma_points() {
   VectorXd x_aug = VectorXd(n_aug_);
   MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
@@ -400,4 +391,44 @@ void UKF::predict_measurement_lidar(VectorXd* z_pred_out, MatrixXd* S_out) {
   // return
   *S_out = S;
   *z_pred_out = z_pred;
+}
+
+void UKF::UpdateLidar(MeasurementPackage meas_package) {
+  /**
+   * TODO: Complete this function! Use lidar data to update the belief
+   * about the object's position. Modify the state vector, x_, and
+   * covariance, P_.
+   * You can also calculate the lidar NIS, if desired.
+   */
+  MatrixXd Zsig = sigma_2_lidar();
+
+  // cross correlation matrix
+  MatrixXd Tc = MatrixXd(n_x_, n_z_lidar);
+  Tc.fill(0.0);
+
+  VectorXd z_pred;
+  MatrixXd S;
+  predict_measurement_lidar(&z_pred, &S);
+  // calculate cross correlation matrix
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) {
+    // residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    normalize_angle(x_diff(3));
+
+    Tc += weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  // calculate Kalman gain
+  MatrixXd K = Tc * S.inverse();
+
+  // get data from sensor
+  VectorXd z = meas_package.raw_measurements_;
+  // update state mean and covariance
+  VectorXd z_diff = z - z_pred;
+
+  x_ += K * z_diff;
+  P_ -= K * S * K.transpose();
 }

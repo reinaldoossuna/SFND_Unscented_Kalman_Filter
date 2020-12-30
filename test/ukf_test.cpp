@@ -208,3 +208,39 @@ TEST_F(ukf_test, predict_measurement_lidar) {
     TEST_VECTOR(z_exp, z_pred);
     TEST_MATRIX(S_exp, S);
 }
+TEST_F(ukf_test, update_lidar) {
+    double delta_t = 0.1;
+    Eigen::MatrixXd Xsig_arg = ukf->generate_sigma_points();
+    ukf->predict_sigma_points(Xsig_arg, delta_t);
+    ukf->predict_mean_covariance();
+    Eigen::VectorXd z_pred;
+    Eigen::MatrixXd S;
+    ukf->predict_measurement_lidar(&z_pred, &S);
+
+    MeasurementPackage mp;
+    mp.sensor_type_ = MeasurementPackage::SensorType::LASER;
+    mp.raw_measurements_ = Eigen::VectorXd(2);
+    mp.raw_measurements_ <<
+        5.92135,
+        0.0226;
+
+    ukf->UpdateLidar(mp);
+
+    Eigen::VectorXd x_exp = Eigen::VectorXd(5);
+    x_exp <<
+        6.02036,
+        1.01319,
+        2.12309,
+        0.116319,
+        0.0112749;
+    Eigen::MatrixXd P_exp = Eigen::MatrixXd(5, 5);
+    P_exp <<
+        0.00428582, -0.00135659,  0.00284798, -0.00229601, -0.00201578,
+        -0.00135659,  0.00731145,  0.00122978,  0.00647241,  0.00525873,
+        0.00284798,  0.00122978,  0.00528598, 0.000690774, 0.000750264,
+        -0.00229601,  0.00647241, 0.000690774,  0.00870911,   0.0086141,
+        -0.00201578,  0.00525873, 0.000750264,   0.0086141,   0.0105378;
+
+    TEST_VECTOR(x_exp, ukf->x_);
+    TEST_MATRIX(P_exp, ukf->P_);
+}
